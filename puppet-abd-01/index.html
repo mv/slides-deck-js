@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js ie6" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js ie7" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js ie8" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!-->  <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <title>Puppet Abril</title>
+
+    <meta name="description" content="Apresentacao de Puppet para a Equipe Abril">
+    <meta name="author" content="Marcus Vinicius Ferreira">
+    <meta name="viewport" content="width=1024, user-scalable=no">
+
+    <!-- Core and extension CSS files -->
+    <link rel="stylesheet" href="../core/deck.core.css">
+    <link rel="stylesheet" href="../extensions/goto/deck.goto.css">
+    <link rel="stylesheet" href="../extensions/menu/deck.menu.css">
+    <link rel="stylesheet" href="../extensions/navigation/deck.navigation.css">
+    <link rel="stylesheet" href="../extensions/status/deck.status.css">
+    <link rel="stylesheet" href="../extensions/hash/deck.hash.css">
+
+    <!-- Theme CSS files (menu swaps these out) -->
+    <link rel="stylesheet" id="style-theme-link" href="../themes/style/web-2.0.css">
+    <link rel="stylesheet" id="transition-theme-link" href="../themes/transition/horizontal-slide.css">
+
+    <!-- Custom CSS just for this page -->
+    <link rel="stylesheet" href="introduction.css">
+
+    <script src="../modernizr.custom.js"></script>
+</head>
+
+<body class="deck-container">
+
+<div class="theme-menu">
+    <h2>Themes</h2>
+
+    <label for="style-themes">Style:</label>
+    <select id="style-themes">
+        <option selected value="../themes/style/web-2.0.css">Web 2.0</option>
+        <option value="../themes/style/swiss.css">Swiss</option>
+        <option value="../themes/style/neon.css">Neon</option>
+        <option value="">None</option>
+    </select>
+
+    <label for="transition-themes">Transition:</label>
+    <select id="transition-themes">
+        <option selected value="../themes/transition/horizontal-slide.css">Horizontal Slide</option>
+        <option value="../themes/transition/vertical-slide.css">Vertical Slide</option>
+        <option value="../themes/transition/fade.css">Fade</option>
+        <option value="">None</option>
+    </select>
+</div>
+
+<section class="slide" id="title-slide">
+    <h1>Puppet na Abril</h1>
+</section>
+
+<section class="slide" id="o-que-e-puppet">
+    <h2>O que é Puppet?</h2>
+    <ol>
+        <li>
+            <h3>Automação</h3>
+        </li>
+        <li>
+            <h3>Padronização</h3>
+        </li>
+        <li>
+            <h3>Provisionamento</h3>
+        </li>
+    </ol>
+</section>
+
+<section class="slide" id="como-funciona">
+    <h2>Como funciona ?</h2>
+    <p>Com Ruby 1.8.7 e rubygems instalados:</p>
+    <pre><code>gem install puppet
+gem install facter
+</code></pre>
+
+    <p>Aplica-se os scripts puppet:</p>
+    <pre><code>puppet apply ssh.pp
+puppet apply ntp.pp
+</code></pre>
+
+</section>
+
+<section class="slide" id="pp1">
+    <h2>Scripts .pp</h2>
+    <p>Cada script puppet define <code>resources</code> que são
+        parametrizáveis</p>
+    <pre><code>puppet describe --list   # todos os resources
+puppet describe file     # resource file
+puppet describe file -s  # resource file, short
+    </code></pre>
+    <p>Documentacao do site:</p>
+    <pre><code>http://docs.puppetlabs.com/references/stable/type.html</code></pre>
+</section>
+
+<section class="slide" id="file1">
+    <h2>Resource: file</h2>
+    <p>Um exemplo de puppet controlando um arquivo:</p>
+    <pre><code> file { "/etc/passwd":
+  owner => root,
+  group => root,
+  mode  => 644
+}
+
+file { $ssh_config:
+  owner => root,
+  group => root,
+  mode  => 644
+} </code></pre>
+    <p>Dependendo do sistema operacional:</p>
+        <li> <code>/etc/sshd_config</code> </li>
+        <li> <code>/etc/ssh/sshd_config</code> </li>
+</section>
+
+<section class="slide" id="package1">
+    <h2>Resource: package</h2>
+    <p>Um exemplo de puppet controlando um pacote:</p>
+    <pre><code>package { "openssh":
+  ensure => installed,
+} </code></pre>
+
+    <p>Pelo contexto do sistema operacional puppet já sabe se deve usar
+.rpm, .deb, pkgutil, etc...</p>
+
+</section>
+
+<section class="slide" id="package2">
+    <h2>Resource: package</h2>
+    <p>Outro exemplo:</p>
+    <pre><code>$ssh = $operatingsystem ? {
+  solaris => SMCossh,
+  default => openssh
+}
+
+package { $ssh:
+  ensure  => installed,
+  alias   => openssh,
+  require => Package[openssl]  ## dependency
+} </code></pre>
+
+</section>
+
+<section class="slide" id="facter">
+    <h2>Facter</h2>
+    <p>Os detalhes do ambiente do servidor é dado pela gem <code>facter</code></p>
+
+    <pre><code> $ facter
+architecture => i386
+domain => example.com
+facterversion => 1.6.2
+fqdn => server.example.com
+hardwaremodel => i386
+hostname => server
+ipaddress => 10.170.80.201
+..
+operatingsystem => Darwin
+operatingsystemrelease => 10.8.0
+..
+timezone => BRST
+uptime => 3 days </code></pre>
+
+</section>
+
+<section class="slide" id="service1">
+    <h2>Resource: Service</h2>
+    <pre><code>service { "ntp":
+    ensure  => running,
+    enable  => true,
+    pattern => 'ntpd',
+    subscribe => [Package["ntp"],
+    require   => File["/etc/ntp.conf"]],
+}</code></pre>
+    <p>Dependendo do sistema operacional:</p>
+        <li> <code>service ntpd start|stop</code> </li>
+        <li> <code>/etc/init.d/ntpd start|stop</code> </li>
+        <li> <code>ps -ef | grep ntpd | xargs kill ...</code> (usando a string
+            de 'pattern')</li>
+
+</section>
+
+<section class="slide" id="chef1">
+    <h2>Resource: Puppet x Chef</h2>
+    <p>Comparando resources:</p>
+    <pre><code>service "apache" do
+  supports :restart => true, :reload => true
+  action :enable
+end
+
+template "/tmp/somefile" do
+  mode "0644"
+  source "somefile.erb"
+  notifies :reload, resources(:service => "apache")
+end
+
+package "some_package" do
+ provider Chef::Provider::Package::RPM
+end </code></pre>
+</section>
+
+
+<section class="slide" id="chef2">
+    <h2>Facts: Puppet x Chef</h2>
+    <p><code>facter</code> x <code>ohai</code></p>
+    <pre><code>$ ohai
+{
+  "kernel": {
+    "modules": {
+      "com.apple.driver.AppleAPIC": {
+        "size": 12288,
+        "version": "1.4",
+      },
+    "machine": "x86_64",
+    "name": "Darwin",
+    "os": "Darwin",
+    "version": "Darwin Kernel Version 10.8.0",
+    "release": "10.8.0"
+  },
+  "platform_version": "10.6.8",
+  "fqdn": "server.example.com",
+  ...
+} </code></pre>
+</section>
+
+
+<section class="slide" id="user">
+    <h2>Resource: User</h2>
+    <p>Comparando resources:</p>
+    <pre><code>user { 'root':
+    home => '/root',
+    uid  => '0',
+    gid  => '0',
+    shell  => '/bin/bash',
+    ensure => 'present',
+    comment => 'System Administrator'
+} </code></pre>
+    <pre><code>user { 'dave':
+    ensure     => present,
+    uid        => '507',
+    gid        => 'admin',
+    shell      => '/bin/zsh',
+    home       => '/home/dave',
+    managehome => true,
+    password => 'ABCEF00303030303A00D0DX',
+} </code></pre>
+</section>
+
+
+<section class="slide" id="tripplet">
+    <h2>Tripla do Puppet</h2>
+    <p>Definindo todos os elementos que andam juntos:</p>
+    <pre><code>package { 'mysql':
+    ensure => '5.4.3-x86_64
+}
+
+file { '/etc/my.cnf':
+    mode => '664',
+    owner => mysql,
+    group => mysql,
+    source => <strong>'/mnt/nfs/configs/my.cnf'</strong>,
+    require => Package[mysql],
+}
+
+service { "mysql":
+    ensure  => running,
+    enable  => true,
+    pattern => <strong>'mysqld'</strong>,
+    subscribe => [Package["mysql"],
+    require   => File["/etc/my.cnf"]],
+} </code></pre>
+</section>
+
+
+<section class="slide" id="class">
+    <h2>Class</h2>
+    <p>Agrupando elementos logicamente</p>
+    <pre><code>class mysql {
+    package { 'mysql':
+        ensure => '5.4.3-x86_64'
+    }
+    file { '/etc/my.cnf':
+        ...
+        source => <strong>'/mnt/nfs/configs/my.cnf'</strong>,
+    }
+    service { "mysql":
+        ...
+        enable  => true,
+    }
+    user {"mysql":
+        ...
+    }
+}</code></pre>
+</section>
+
+<section class="slide" id="module1">
+    <h2>Module</h2>
+    <p>Agrupando definicoes e arquivos...</p>
+    <pre><code> file { '/etc/my.cnf':
+    mode => '664',
+    owner => mysql,
+    group => mysql,
+    source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
+    require => Package[mysql],
+} </code></pre>
+</section>
+
+<section class="slide" id="module2">
+    <h2>Module</h2>
+    <p>... numa árvore de diretórios...</p>
+    <pre><code>
+.../<strong>mysql</strong>
+.../<strong>mysql</strong>/manifests/
+.../<strong>mysql</strong>/manifests/<strong>init.pp</strong>
+.../<strong>mysql</strong>/files/
+.../<strong>mysql</strong>/files/<strong>my.cnf</strong>
+.../<strong>mysql</strong>/templates/
+</code></pre>
+</section>
+
+<section class="slide" id="module3">
+    <h2>Module</h2>
+    <p>para serem distribuídos num conjunto só:</p>
+    <pre><code> file { '/etc/my.cnf':
+    ...
+    source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
+} </code></pre>
+</section>
+
+
+<section class="slide" id="manifests1">
+    <h2>Manifests</h2>
+    <p>Todos os módulos num lugar só:</p>
+    <pre><code>/etc/puppet/modules/<strong>apache</strong>
+/etc/puppet/modules/<strong>apache</strong>/manifests/
+/etc/puppet/modules/<strong>apache</strong>/manifests/<strong>init.pp</strong>
+/etc/puppet/modules/<strong>apache</strong>/files/
+/etc/puppet/modules/<strong>apache</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/modules/<strong>apache</strong>/templates/
+/etc/puppet/modules/<strong>apache</strong>/templates/vhost.conf.erb
+/etc/puppet/modules/<strong>mysql</strong>
+/etc/puppet/modules/<strong>mysql</strong>/manifests/
+/etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>init.pp</strong>
+/etc/puppet/modules/<strong>mysql</strong>/files/
+/etc/puppet/modules/<strong>mysql</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/modules/<strong>ssh</strong>
+/etc/puppet/modules/<strong>ssh</strong>/manifests/
+/etc/puppet/modules/<strong>ssh</strong>/manifests/<strong>init.pp</strong>
+/etc/puppet/modules/<strong>ssh</strong>/files/sshd_config
+/etc/puppet/modules/<strong>ssh</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/puppet.conf
+</code></pre>
+</section>
+
+
+<section class="slide" id="template1">
+    <h2>Templates</h2>
+    <p>Usando os fatos de <code>facter</code>, a partir de
+        <code>vhost.conf.erb</code>:</p>
+    <pre><code>&ltVirtualHost <%= ip >:<%= port %>>
+
+  ServerName   <%= site_url %>
+  DocumentRoot <%= docroot %>
+  CustomLog /logs/<%= site %>_access.log common
+  ErrorLog  /logs/<%= site %>_error.log
+
+  &ltDirectory <%= docroot %>>
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+  &lt/Directory>
+
+<%if site_env = 'prod' -%>
+  LogLevel info
+<% elsif -%>
+  LogLevel warn
+<% end -%>
+
+&ltVirtualHost> </code></pre>
+</section>
+
+<section class="slide" id="node1">
+    <h2>Nodes</h2>
+    <p>Definindo as classes que cada servidor usará:</p>
+    <pre><code>node default {
+    include sudo
+    include sshd
+    include security
+    include infra
+    include ntp
+    include logview
+    include git
+    include rvm-ruby
+} </code></pre>
+</section>
+
+<section class="slide" id="node2">
+    <h2>Nodes</h2>
+    <p>Definindo as classes que cada servidor usará:</p>
+    <pre><code>node v-git-01 {
+    include gitorious
+    include apache
+}
+
+node v-git-02 {
+    include gitorious
+    include apache
+}
+
+</code></pre>
+</section>
+
+
+<section class="slide" id="node3">
+    <h2>Nodes</h2>
+    <pre><code># modules/app-veja/manifests/init.pp:
+
+class veja {
+  $app_user   = 'veja'
+  $app_dir    = '/abd/app/veja'
+  $bd_user    = 'veja'
+  $bd_name    = 'veja_production'
+  $bd_host    = '172.16.202.1'
+  $site_url   = 'veja.abril.com.br'
+  $site_admin = 'admin.veja.abril.com.br'
+  $vhost_dir  = '/dir/httpd/vhost/'
+  $site_memcache = [ '172.16.1.1', '172.16.1.2' ]
+
+  file { "$vhost_dir/veja.conf":
+      template => puppet://modules/veja.conf.erb
+  }
+
+  file { "/etc/sysconfig/memcached.conf/":
+      template => puppet://modules/memcache.conf.erb
+  }
+
+  file { "$app_dir/config/database.yml":
+      template => puppet://modules/database.yml.erb
+  }
+
+} </code></pre>
+</section>
+
+
+<section class="slide" id="node4">
+    <h2>Nodes</h2>
+    <pre><code># /etc/puppet/nodes/veja.pp
+
+node /veja-ws/ {
+    include veja
+    include apache
+    include ruby
+    include memcache
+}
+
+node /veja-adm/ {
+    include veja
+    include apache
+    include ruby
+    include ssl
+}
+
+node /veja-db/ {
+    include mysql
+} </code></pre>
+</section>
+
+
+<section class="slide" id="etc1">
+    <h2>/etc/puppet</h2>
+    <pre><code>
+/etc/puppet/modules/<strong>apache</strong>/manifests/init.pp
+/etc/puppet/modules/<strong>mysql</strong>/manifests/init.pp
+/etc/puppet/modules/<strong>ssh</strong>/manifests/init.pp
+/etc/puppet/nodes/
+/etc/puppet/nodes/aapg.pp
+/etc/puppet/nodes/abrilid.pp
+/etc/puppet/nodes/bebe.pp
+/etc/puppet/nodes/exame.pp
+/etc/puppet/nodes/iphone.pp
+/etc/puppet/nodes/mundoestranho.pp
+/etc/puppet/nodes/veja.pp
+/etc/puppet/users/infra.pp
+/etc/puppet/puppet.conf
+</code></pre>
+</section>
+
+
+<section class="slide" id="final">
+    <h2>Referencias:</h2>
+    <p>Para saber mais:</p>
+    <pre><code>http://www.linux-mag.com/id/7841/
+http://docs.puppetlabs.com/
+http://wiki.opscode.com/display/chef/Home
+</code></pre>
+</section>
+
+
+<section class="slide" id="chef">
+    <h2>Resource: Puppet x Chef</h2>
+    <p>Comparando resources:</p>
+    <pre><code>
+</code></pre>
+</section>
+
+<a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+<a href="#" class="deck-next-link" title="Next">&#8594;</a>
+
+<p class="deck-status">
+    <span class="deck-status-current"></span>
+    /
+    <span class="deck-status-total"></span>
+</p>
+
+<form action="." method="get" class="goto-form">
+    <label for="goto-slide">Go to slide:</label>
+    <input type="number" name="slidenum" id="goto-slide">
+    <input type="submit" value="Go">
+</form>
+
+<a href="." title="Permalink to this slide" class="deck-permalink">#</a>
+
+
+  <!-- Grab Google CDN's jQuery, with a protocol relative URL; fall back to local if offline -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="../jquery-1.6.4.min.js"><\/script>')</script>
+
+<!-- Deck Core and extensions -->
+<script src="../core/deck.core.js"></script>
+<script src="../extensions/menu/deck.menu.js"></script>
+<script src="../extensions/goto/deck.goto.js"></script>
+<script src="../extensions/status/deck.status.js"></script>
+<script src="../extensions/navigation/deck.navigation.js"></script>
+<script src="../extensions/hash/deck.hash.js"></script>
+
+<!-- Specific to this page -->
+<script src="introduction.js"></script>
+
+</body>
+</html>

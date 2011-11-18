@@ -90,12 +90,15 @@ puppet apply ntp.pp
     <h2>Scripts .pp</h2>
     <p>Cada script puppet define <code>resources</code> que são
         parametrizáveis</p>
-    <pre><code>puppet describe --list   # todos os resources
-puppet describe file     # resource file
-puppet describe file -s  # resource file, short
+    <pre><code>$ puppet describe --list   # todos os resources
+$ puppet describe file     # resource file
+$ puppet describe file -s  # resource file, short
     </code></pre>
     <p>Documentacao do site:</p>
     <pre><code>http://docs.puppetlabs.com/references/stable/type.html</code></pre>
+    </code></pre>
+    <p>Para usar o script:</p>
+    <pre><code>$ puppet apply script.pp mysql.pp pkg.pp</code></pre>
 </section>
 
 <section class="slide" id="file1">
@@ -113,8 +116,8 @@ file { $ssh_config:
   mode  => 644
 } </code></pre>
     <p>Dependendo do sistema operacional:</p>
-        <li> <code>/etc/sshd_config</code> </li>
-        <li> <code>/etc/ssh/sshd_config</code> </li>
+        <li> <code>$ssh_config = "/etc/sshd_config"</code> </li>
+        <li> <code>$ssh_config = "/etc/ssh/sshd_config"</code> </li>
 </section>
 
 <section class="slide" id="package1">
@@ -122,6 +125,9 @@ file { $ssh_config:
     <p>Um exemplo de puppet controlando um pacote:</p>
     <pre><code>package { "openssh":
   ensure => installed,
+} </code></pre>
+    <pre><code>package { "openssh":
+  ensure => [ installed, '1.6.9p17-2' ],
 } </code></pre>
 
     <p>Pelo contexto do sistema operacional puppet já sabe se deve usar
@@ -145,6 +151,65 @@ package { $ssh:
 
 </section>
 
+
+<section class="slide" id="service1">
+    <h2>Resource: Service</h2>
+    <pre><code>service { "ntp":
+    ensure  => running,
+    enable  => true,
+    pattern => 'ntpd',
+    subscribe => [Package["ntp"],
+    require   => File["/etc/ntp.conf"]],
+}</code></pre>
+    <p>Dependendo do sistema operacional:</p>
+        <li> <code>service ntpd start|stop</code> </li>
+        <li> <code>/etc/init.d/ntpd start|stop</code> </li>
+        <li> <code>ps -ef | grep ntpd | xargs kill ...</code> (usando a string
+            de 'pattern')</li>
+
+</section>
+
+
+<section class="slide" id="user">
+    <h2>Resource: User</h2>
+    <p>Comparando resources:</p>
+    <pre><code>user { 'root':
+    home => '/root',
+    uid  => '0',
+    gid  => '0',
+    shell  => '/bin/bash',
+    ensure => 'present',
+    comment => 'System Administrator'
+} </code></pre>
+    <pre><code>user { 'dave':
+    ensure     => present,
+    uid        => '507',
+    gid        => 'admin',
+    shell      => '/bin/zsh',
+    home       => '/home/dave',
+    managehome => true,
+    password => '*',
+} </code></pre>
+</section>
+
+
+<section class="slide" id="others">
+    <h2>Resources...</h2>
+    <p>Mais recursos disponiveis:</p>
+
+    <pre><code>
+              link 'link-name'  {}
+              exec 'cmd-name'   {}
+              cron 'job-name'   {}
+              host 'host-name'  {}
+             mount 'mount-name' {}
+             group 'group-name' {}
+           yumrepo 'repo-name'  {}
+ssh_authorized_key 'key-name'   {}
+</code></pre>
+</section>
+
+
 <section class="slide" id="facter">
     <h2>Facter</h2>
     <p>Os detalhes do ambiente do servidor é dado pela gem <code>facter</code></p>
@@ -166,22 +231,6 @@ uptime => 3 days </code></pre>
 
 </section>
 
-<section class="slide" id="service1">
-    <h2>Resource: Service</h2>
-    <pre><code>service { "ntp":
-    ensure  => running,
-    enable  => true,
-    pattern => 'ntpd',
-    subscribe => [Package["ntp"],
-    require   => File["/etc/ntp.conf"]],
-}</code></pre>
-    <p>Dependendo do sistema operacional:</p>
-        <li> <code>service ntpd start|stop</code> </li>
-        <li> <code>/etc/init.d/ntpd start|stop</code> </li>
-        <li> <code>ps -ef | grep ntpd | xargs kill ...</code> (usando a string
-            de 'pattern')</li>
-
-</section>
 
 <section class="slide" id="chef1">
     <h2>Resource: Puppet x Chef</h2>
@@ -223,29 +272,6 @@ end </code></pre>
   "platform_version": "10.6.8",
   "fqdn": "server.example.com",
   ...
-} </code></pre>
-</section>
-
-
-<section class="slide" id="user">
-    <h2>Resource: User</h2>
-    <p>Comparando resources:</p>
-    <pre><code>user { 'root':
-    home => '/root',
-    uid  => '0',
-    gid  => '0',
-    shell  => '/bin/bash',
-    ensure => 'present',
-    comment => 'System Administrator'
-} </code></pre>
-    <pre><code>user { 'dave':
-    ensure     => present,
-    uid        => '507',
-    gid        => 'admin',
-    shell      => '/bin/zsh',
-    home       => '/home/dave',
-    managehome => true,
-    password => 'ABCEF00303030303A00D0DX',
 } </code></pre>
 </section>
 
@@ -296,37 +322,30 @@ service { "mysql":
 }</code></pre>
 </section>
 
-<section class="slide" id="module1">
-    <h2>Module</h2>
-    <p>Agrupando definicoes e arquivos...</p>
-    <pre><code> file { '/etc/my.cnf':
-    mode => '664',
-    owner => mysql,
-    group => mysql,
-    source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
-    require => Package[mysql],
-} </code></pre>
-</section>
-
 <section class="slide" id="module2">
     <h2>Module</h2>
-    <p>... numa árvore de diretórios...</p>
+    <p>Agrupando numa árvore de diretórios...</p>
     <pre><code>
 .../<strong>mysql</strong>
 .../<strong>mysql</strong>/manifests/
 .../<strong>mysql</strong>/manifests/<strong>init.pp</strong>
 .../<strong>mysql</strong>/files/
 .../<strong>mysql</strong>/files/<strong>my.cnf</strong>
+.../<strong>mysql</strong>/files/<strong>master.cnf</strong>
+.../<strong>mysql</strong>/files/<strong>slave.cnf</strong>
 .../<strong>mysql</strong>/templates/
 </code></pre>
 </section>
 
-<section class="slide" id="module3">
+<section class="slide" id="module1">
     <h2>Module</h2>
-    <p>para serem distribuídos num conjunto só:</p>
+    <p>é possível referenciar meu conjuntos de arquivos num lugar só:</p>
     <pre><code> file { '/etc/my.cnf':
-    ...
+    mode => '664',
+    owner => mysql,
+    group => mysql,
     source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
+    require => Package[mysql],
 } </code></pre>
 </section>
 
@@ -338,7 +357,10 @@ service { "mysql":
 /etc/puppet/modules/<strong>apache</strong>/manifests/
 /etc/puppet/modules/<strong>apache</strong>/manifests/<strong>init.pp</strong>
 /etc/puppet/modules/<strong>apache</strong>/files/
-/etc/puppet/modules/<strong>apache</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/modules/<strong>apache</strong>/files/<strong>httpd.conf</strong>
+/etc/puppet/modules/<strong>apache</strong>/files/<strong>lang.conf</strong>
+/etc/puppet/modules/<strong>apache</strong>/files/<strong>proxy.conf</strong>
+/etc/puppet/modules/<strong>apache</strong>/files/<strong>server.conf</strong>
 /etc/puppet/modules/<strong>apache</strong>/templates/
 /etc/puppet/modules/<strong>apache</strong>/templates/vhost.conf.erb
 /etc/puppet/modules/<strong>mysql</strong>
@@ -346,13 +368,102 @@ service { "mysql":
 /etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>init.pp</strong>
 /etc/puppet/modules/<strong>mysql</strong>/files/
 /etc/puppet/modules/<strong>mysql</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/modules/<strong>mysql</strong>/files/<strong>master.cnf</strong>
+/etc/puppet/modules/<strong>mysql</strong>/files/<strong>slave.cnf</strong>
 /etc/puppet/modules/<strong>ssh</strong>
 /etc/puppet/modules/<strong>ssh</strong>/manifests/
 /etc/puppet/modules/<strong>ssh</strong>/manifests/<strong>init.pp</strong>
-/etc/puppet/modules/<strong>ssh</strong>/files/sshd_config
-/etc/puppet/modules/<strong>ssh</strong>/files/<strong>my.cnf</strong>
+/etc/puppet/modules/<strong>ssh</strong>/files/<strong>sshd_config</strong>
+/etc/puppet/modules/<strong>ssh</strong>/files/<strong>ssh_config</strong>
 /etc/puppet/puppet.conf
 </code></pre>
+</section>
+
+
+<section class="slide" id="modules2a">
+    <h2>Organizando Modules</h2>
+    <p>Dentro do módulo 'script.pp' vira 'init.pp':</p>
+    <pre><code>
+/etc/puppet/modules/<strong>mysql</strong>
+/etc/puppet/modules/<strong>mysql</strong>/manifests/
+/etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>init.pp</strong>
+/etc/puppet/modules/<strong>mysql</strong>/files/
+/etc/puppet/modules/<strong>mysql</strong>/files/my.cnf
+/etc/puppet/modules/<strong>mysql</strong>/files/master.cnf
+/etc/puppet/modules/<strong>mysql</strong>/files/slave.cnf
+</code></pre>
+    <pre><code># init.pp
+class mysql {
+    package { 'mysql': ensure => '5.4.3-x86_64' }
+    service { "mysql": enable  => true, }
+    file { '/etc/my.cnf':
+        ...
+        source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
+    }
+    user {"mysql": ...  }
+}</code></pre>
+</section>
+
+
+<section class="slide" id="modules2b">
+    <h2>Organizando Modules</h2>
+    <p>É possível separar em 'subclasses':</p>
+    <pre><code># install.pp
+class mysql::install {
+    package { 'mysql': ensure => '5.4.3-x86_64' }
+    service { "mysql": enable  => <strong>true</strong>, }
+    file { '/etc/my.cnf': ...  }
+    user {"mysql": ...  }
+}</code></pre>
+    <pre><code># remove.pp
+class mysql::remove {
+    package { 'mysql': ensure => <strong>absent</strong> }
+    service { "mysql": enable => <strong>false</strong>  }
+       user { "mysql": ensure => <strong>absent</strong> }
+}</code></pre>
+</section>
+
+
+
+<section class="slide" id="modules2c">
+    <h2>Organizando Modules</h2>
+    <p>Modulo com sub-classes:</p>
+    <pre><code>
+/etc/puppet/modules/<strong>mysql</strong>
+/etc/puppet/modules/<strong>mysql</strong>/manifests/
+/etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>init.pp</strong>
+/etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>install.pp</strong>
+/etc/puppet/modules/<strong>mysql</strong>/manifests/<strong>remove.pp</strong>
+/etc/puppet/modules/<strong>mysql</strong>/files/my.cnf
+/etc/puppet/modules/<strong>mysql</strong>/files/master.cnf
+/etc/puppet/modules/<strong>mysql</strong>/files/slave.cnf
+</code></pre>
+    <pre><code># init.pp
+class mysql {
+    include mysql::install
+}</code></pre>
+    <p>Para usar um módulo:</p>
+    <pre><code>$ puppet --modulepath="mysql" apply "mysql/manifests/init.pp"
+</code></pre>
+
+</section>
+
+
+<section class="slide" id="modules2d">
+    <h2>Organizando Modules</h2>
+    <p>Criando um alias no shell:</p>
+    <pre><code>
+pp() {
+    [ -f "$1" ] && puppet apply "$1"
+    [ -d "$1" ] && puppet --modulepath="$1" apply "$1/manifests/init.pp"
+}
+</code></pre>
+    <p>Usando script ou módulo:</p>
+    <pre><code>
+pp ./mysql.pp   # script
+pp mysql        # module
+</code></pre>
+
 </section>
 
 
@@ -360,25 +471,25 @@ service { "mysql":
     <h2>Templates</h2>
     <p>Usando os fatos de <code>facter</code>, a partir de
         <code>vhost.conf.erb</code>:</p>
-    <pre><code>&ltVirtualHost <%= ip >:<%= port %>>
+    <pre><code>&ltVirtualHost <strong><%= ip >:<%= port %></strong>
 
-  ServerName   <%= site_url %>
-  DocumentRoot <%= docroot %>
-  CustomLog /logs/<%= site %>_access.log common
-  ErrorLog  /logs/<%= site %>_error.log
+  ServerName   <strong><%= site_url %></strong>
+  DocumentRoot <strong><%= docroot %></strong>
+  CustomLog /logs/<strong><%= site %></strong>_access.log common
+  ErrorLog  /logs/<strong><%= site %></strong>_error.log
 
-  &ltDirectory <%= docroot %>>
+  &ltDirectory <strong><%= docroot %></strong>
     Options Indexes FollowSymLinks MultiViews
     AllowOverride None
     Order allow,deny
     Allow from all
   &lt/Directory>
 
-<%if site_env = 'prod' -%>
+<strong><%if site_env = 'prod' -%></strong>
   LogLevel info
-<% elsif -%>
+<strong><% elsif -%></strong>
   LogLevel warn
-<% end -%>
+<strong><% end -%></strong>
 
 &ltVirtualHost> </code></pre>
 </section>
@@ -386,6 +497,23 @@ service { "mysql":
 <section class="slide" id="node1">
     <h2>Nodes</h2>
     <p>Definindo as classes que cada servidor usará:</p>
+    <pre><code>node server-git-01 {
+    include gitorious
+    include apache
+}
+
+node server-git-02 {
+    include gitorious
+    include apache
+}
+
+</code></pre>
+</section>
+
+
+<section class="slide" id="node2">
+    <h2>Nodes</h2>
+    <p>'Default' é um node 'global' para todo o manifesto:</p>
     <pre><code>node default {
     include sudo
     include sshd
@@ -398,40 +526,23 @@ service { "mysql":
 } </code></pre>
 </section>
 
-<section class="slide" id="node2">
-    <h2>Nodes</h2>
-    <p>Definindo as classes que cada servidor usará:</p>
-    <pre><code>node v-git-01 {
-    include gitorious
-    include apache
-}
-
-node v-git-02 {
-    include gitorious
-    include apache
-}
-
-</code></pre>
-</section>
-
-
 <section class="slide" id="node3">
-    <h2>Nodes</h2>
-    <pre><code># modules/app-veja/manifests/init.pp:
+    <h2>Definindo uma classe de aplicativo, para ser usado no node:</h2>
+    <pre><code># modules/app-site/manifests/init.pp:
 
-class veja {
-  $app_user   = 'veja'
-  $app_dir    = '/abd/app/veja'
-  $bd_user    = 'veja'
-  $bd_name    = 'veja_production'
-  $bd_host    = '172.16.202.1'
-  $site_url   = 'veja.abril.com.br'
-  $site_admin = 'admin.veja.abril.com.br'
+class my-site {
+  $app_user   = 'my-site'
+  $app_dir    = '/abd/app/my-site'
+  $bd_user    = 'my-site'
+  $bd_name    = 'my-site_production'
+  $bd_host    = '192.168.2.1'
+  $site_url   = 'my-site.abril.com.br'
+  $site_admin = 'admin.my-site.abril.com.br'
   $vhost_dir  = '/dir/httpd/vhost/'
-  $site_memcache = [ '172.16.1.1', '172.16.1.2' ]
+  $site_memcache = [ '192.168.1.1', '192.168.1.2' ]
 
-  file { "$vhost_dir/veja.conf":
-      template => puppet://modules/veja.conf.erb
+  file { "$vhost_dir/my-site.conf":
+      template => puppet://modules/my-site.conf.erb
   }
 
   file { "/etc/sysconfig/memcached.conf/":
@@ -447,24 +558,24 @@ class veja {
 
 
 <section class="slide" id="node4">
-    <h2>Nodes</h2>
-    <pre><code># /etc/puppet/nodes/veja.pp
+    <h2>Usando a classe de aplicativo no node:</h2>
+    <pre><code># /etc/puppet/nodes/my-site.pp
 
-node /veja-ws/ {
-    include veja
+node /my-site-ws/ {
+    include <strong>my-site</strong>
     include apache
     include ruby
     include memcache
 }
 
-node /veja-adm/ {
-    include veja
+node /my-site-adm/ {
+    include <strong>my-site</strong>
     include apache
     include ruby
     include ssl
 }
 
-node /veja-db/ {
+node /my-site-db/ {
     include mysql
 } </code></pre>
 </section>
@@ -476,19 +587,74 @@ node /veja-db/ {
 /etc/puppet/modules/<strong>apache</strong>/manifests/init.pp
 /etc/puppet/modules/<strong>mysql</strong>/manifests/init.pp
 /etc/puppet/modules/<strong>ssh</strong>/manifests/init.pp
-/etc/puppet/nodes/
-/etc/puppet/nodes/aapg.pp
-/etc/puppet/nodes/abrilid.pp
-/etc/puppet/nodes/bebe.pp
-/etc/puppet/nodes/exame.pp
-/etc/puppet/nodes/iphone.pp
-/etc/puppet/nodes/mundoestranho.pp
-/etc/puppet/nodes/veja.pp
-/etc/puppet/users/infra.pp
+/etc/puppet/<strong>nodes</strong>/my-site.pp
+/etc/puppet/<strong>nodes</strong>/my-site2pp
+/etc/puppet/<strong>nodes</strong>/my-site3pp
+/etc/puppet/<strong>nodes</strong>/my-site4pp
+/etc/puppet/<strong>users</strong>/infra.pp
+/etc/puppet/<strong>users</strong>/my-site.pp
+/etc/puppet/<strong>users</strong>/my-site2.pp
+/etc/puppet/<strong>users</strong>/my-site3.pp
 /etc/puppet/puppet.conf
 </code></pre>
 </section>
 
+
+<section class="slide" id="adv1">
+    <h2>Avançado: definindo prioridade de configurações:</h2>
+    <h3>ExtLoopkup:</h3>
+    <pre><code>$extlookup_precedence = ["%{fqdn}",
+                         "location_%{location}",
+                         "app_{app}",
+                         "env_{app}",
+                         "domain_%{domain}",
+                         "default"
+                         ]
+</code></pre>
+</section>
+
+
+<section class="slide" id="adv2">
+    <h2>Avançado: definindo prioridade de configurações:</h2>
+    <h3>ExtLoopkup: arquivos yml em /etc:</h3>
+    <pre><code>
+location_abr.yml
+location_tw.yml
+location_ptec.yml
+location_tview.yml
+
+app_my-site.yml
+app_my-site2.yml
+app_my-api.yml
+app_my-api2.yml
+
+env_dev.yml
+env_qa.yml
+env_stage.yml
+env_prod.yml
+
+domain_beta.yml
+domain_admin.yml
+
+default.yml
+</code></pre>
+</section>
+
+
+<section class="slide" id="adv3">
+    <h2>Avançado: definindo prioridade de configurações:</h2>
+    <h3>Arquivos yml em /etc:</h3>
+    <pre><code>
+location_abr.yml
+    resolv_conf: ['192.168.1.1', '192.168.1.2']
+    ...
+
+location_tw.yml
+    resolv_conf: ['4.2.2.1', '4.2.2.2']
+    ...
+
+</code></pre>
+</section>
 
 <section class="slide" id="final">
     <h2>Referencias:</h2>
@@ -496,16 +662,12 @@ node /veja-db/ {
     <pre><code>http://www.linux-mag.com/id/7841/
 http://docs.puppetlabs.com/
 http://wiki.opscode.com/display/chef/Home
+
+Livro: Pro Puppet
+Livro: Pulling Strings with Puppet
 </code></pre>
 </section>
 
-
-<section class="slide" id="chef">
-    <h2>Resource: Puppet x Chef</h2>
-    <p>Comparando resources:</p>
-    <pre><code>
-</code></pre>
-</section>
 
 <a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
 <a href="#" class="deck-next-link" title="Next">&#8594;</a>

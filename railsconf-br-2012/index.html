@@ -507,16 +507,13 @@ service { 'mysqld':
 /etc/puppet/modules/<strong>mysql</strong>/files/master.cnf
 /etc/puppet/modules/<strong>mysql</strong>/files/slave.cnf
 </code></pre>
-    <pre><code># init.pp
-class mysql {
-    package { 'mysql': ensure => '5.4.3-x86_64' }
-    service { "mysql": enable  => true, }
-    file { '/etc/my.cnf':
-        ...
-        source => <strong>'puppet:///modules/mysql/my.cnf'</strong>,
-    }
-    user {"mysql": ...  }
-}</code></pre>
+    <pre><code># To use script standalone:
+$ puppet apply mysql.pp
+
+# To use mysql module:
+$ puppet apply -e 'include mysql'
+
+</code></pre>
 </section>
 
 
@@ -629,6 +626,30 @@ class mysql::remove {
 &ltVirtualHost> </code></pre>
 </section>
 
+<section class="slide" id="template2">
+    <h2>Templates</h2>
+    <p>My own vars inside a class</p>
+    <pre><code>class mysite {
+
+  $site     = 'example'
+  $site_url = 'www.example.com'
+  $docroot  = '/var/www/example'
+
+  file { '/etc/httpd/conf.d/example.conf':
+    mode    => '664',
+    owner   => apache,
+    group   => apache,
+    content => <strong>template('puppet:///modules/apache/my.cnf.erb')</strong>,
+  }
+
+} # end class
+</code></pre>
+
+<pre><code># To use
+puppet apply -e 'include mysite'
+</code></pre>
+</section>
+
 <section class="slide" id="themodel1">
     <h2>Puppet running model: masterless</h2>
     <p>If you have you manifest tree, use it! </p>
@@ -671,8 +692,8 @@ puppet apply -e 'include nginx' --mondulepath=/etc/puppet-global/manifests
 
 <section class="slide" id="themodel3">
     <h2>Puppet running model: Puppet Master</h2>
-    <p>Or just <code>unified</code>:</p>
-    <pre><code>puppet agent</pre></code>
+    <p>Or just <code>Agent/Master</code>:</p>
+    <pre><code>$ puppet agent</pre></code>
     <img src="./manifest_to_defined_state_split.png" alt="mv">
 </section>
 

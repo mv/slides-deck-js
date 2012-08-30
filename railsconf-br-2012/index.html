@@ -695,6 +695,7 @@ puppet apply -e 'include nginx' --mondulepath=/etc/puppet-global/manifests
 </pre></code>
     <li>puppet collects all facts from <code>facter</code></li>
     <li>facts are sent to the Puppet-Master Server</li>
+    <li>Server uses <code>site.pp</code> to sort out this client by <code>HOSTNAME</code></li>
     <li>Server executes all needed modules.</li>
     <li>Server gives back all instructions in <code>JSON</code></li>
     <li>puppet agent applies those instructions </li>
@@ -707,13 +708,31 @@ puppet apply -e 'include nginx' --mondulepath=/etc/puppet-global/manifests
     <img src="./manifest_to_defined_state_split.png" alt="mv">
 </section>
 
+<section class="slide" id="themodel6">
+    <h2>Puppet running model: Puppet Master</h2>
+    <p>And what is <code>site.pp</code>?</p>
+    <ol>
+    <li>When you run:</li>
+    <pre><code>puppet agent </pre></code>
+    <li>... the first script executed is</li>
+    <pre><code>/etc/puppet/manifests/site.pp</pre></code>
+    </ol>
+    <p>Think of of</p>
+    <ol>
+    <li><code>boot.rb</code></li>
+    <li><code>rc.local</code></li>
+    <li><code>autoexec.bat</code></li>
+    </ol>
+</section>
+
 
 <section class="slide" id="node0">
     <h2>The problem: Nodes</h2>
     <p>Node can be a problem because...  </p>
     <li>The master is too bossy.</li>
     <li>He wants to know every client BEFOREHAND.</li>
-    <pre><code>node app-git-01 {
+    <pre><code># site.pp
+node app-git-01 {
     include git
     include gitorious
     include mysql-server
@@ -737,7 +756,8 @@ node web-02 {
 <section class="slide" id="node1">
     <h2>Nodes</h2>
     <p>If you are using nodes, you do not need to be LITERAL:</p>
-    <pre><code>node /git/ {
+    <pre><code># site.pp
+node /git/ {
     include git
     include gitorious
 }
@@ -917,11 +937,20 @@ site='mysite.com'
     <p>To Know more:</p>
     <pre><code>http://www.linux-mag.com/id/7841/
 http://docs.puppetlabs.com/
+http://example42.com/
 
 Livro: Pro Puppet
 Livro: Puppet 2.7 Cookbook
 Livro: Pulling Strings with Puppet
 </code></pre>
+</section>
+
+<section class="slide" id="livros">
+    <h2>References:</h2>
+    <p>Pro Puppet</p>
+    <img src="./pro-puppet.jpeg" alt="pro-puppet">
+    <p>Puppet 2.7 Cookbook</p>
+    <img src="./puppet-cookbook.jpeg" alt="pro-puppet">
 </section>
 
 <section class="slide" id="contactme">
